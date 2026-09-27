@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PageIntel</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap');
+
+    /* ── Reset & Variables ────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:         #191919;
+      --surface:    #222222;
+      --surface2:   #2a2a2a;
+      --border:     #2e2e2e;
+      --border-h:   #3a3a3a;
+      --accent:     #3b82f6;
+      --accent-h:   #2563eb;
+      --accent-glow:rgba(59,130,246,.18);
+      --text:       #ecebe8;
+      --text-sub:   #94a3b8;
+      --text-dim:   #64748b;
+      --error-bg:   #2d1515;
+      --error-txt:  #ff6b6b;
+      --error-bdr:  #5c2020;
+      --radius:     10px;
+      --transition: 0.25s ease;
+
+      /* popup width tokens */
+      --w-single:  420px;
+      --w-compare: 680px;
+    }
+
+    /* ── Body & Layout ────────────────────────────────────────── */
+    body {
+      width: var(--w-single);
+      min-height: 540px;
+      background: var(--bg);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      overflow: hidden;
+      /* smooth width expansion */
+      transition: width 0.35s cubic-bezier(.4,0,.2,1);
+    }
+
+    body.compare-mode { width: var(--w-compare); }
+
+    /* ── Header ───────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand { display: flex; align-items: center; gap: 10px; }
+
+    .brand h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+
+    .brand .badge {
+      font-size: 9px;
+      font-weight: 700;
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(59,130,246,.3);
+      border-radius: 4px;
+      padding: 2px 6px;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    /* ── Compare Toggle Button ────────────────────────────────── */
+    #compareToggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 1.5px solid var(--border-h);
+      border-radius: 8px;
+      background: var(--surface2);
+      color: var(--text-sub);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    #compareToggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+    #compareToggle.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+    #compareToggle svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+    /* ── Main Content ─────────────────────────────────────────── */
+    .main {
+      padding: 16px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Input Row (query + model) ────────────────────────────── */
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .textarea-wrap { flex: 1; position: relative; }
+
+    textarea {
+      width: 100%;
+      height: 68px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px 13px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: inherit;
+      resize: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      line-height: 1.5;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    textarea::placeholder { color: var(--text-dim); }
+
+    /* ── Model Selector ───────────────────────────────────────── */
+    .model-select-wrap { position: relative; }
+    .model-select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      pointer-events: none;
+      font-size: 11px;
+    }
+
+    select {
+      appearance: none;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-sub);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 9px 30px 9px 12px;
+      cursor: pointer;
+      transition: border-color var(--transition);
+      white-space: nowrap;
+    }
+    select:focus { outline: none; border-color: var(--accent); }
+    select:hover { border-color: var(--border-h); }
+
+    /* ── Ask Button ───────────────────────────────────────────── */
+    #askBtn {
+      width: 100%;
+      padding: 11px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all var(--transition);
+      box-shadow: 0 4px 14px rgba(59,130,246,.25);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    #askBtn:hover  { background: var(--accent-h); box-shadow: 0 6px 18px rgba(59,130,246,.35); }
+    #askBtn:active { transform: translateY(1px); }
+    #askBtn:disabled { opacity: .65; cursor: not-allowed; transform: none; }
+
+    /* ── Response Area ────────────────────────────────────────── */
+    .response-area {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      flex: 1;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.65;
+      min-height: 200px;
+      max-height: 280px;
+      transition: border-color var(--transition);
+    }
+    .response-area:hover { border-color: var(--border-h); }
+    .response-area::-webkit-scrollbar       { width: 4px; }
+    .response-area::-webkit-scrollbar-track { background: transparent; }
+    .response-area::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
+
+    .placeholder-msg {
+      color: var(--text-dim);
+      text-align: center;
+      margin-top: 60px;
+      font-style: italic;
+      font-size: 12.5px;
+    }
+
+    .response-text { color: var(--text); white-space: pre-wrap; }
+
+    .word {
+      display: inline;
+      opacity: 0;
+      animation: wordFadeIn 0.4s ease forwards;
+    }
+    @keyframes wordFadeIn { to { opacity: 1; } }
+
+    .error-message {
+      color: var(--error-txt);
+      background: var(--error-bg);
+      border: 1px solid var(--error-bdr);
+      border-radius: 8px;
+      padding: 10px 13px;
+      font-size: 12.5px;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── Loading Spinner ──────────────────────────────────────── */
+    .spinner {
+      width: 13px; height: 13px;
+      border: 2px solid rgba(255,255,255,.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ══════════════════════════════════════════════════════════════
+       COMPARE MODE
+    ══════════════════════════════════════════════════════════════ */
+    #comparePanel {
+      display: none;
+      flex-direction: row;
+      gap: 10px;
+      padding: 0 12px 16px;
+      box-sizing: border-box;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    body.compare-mode #singlePanel  { display: none; }
+    body.compare-mode #comparePanel { display: flex; }
+
+    /* shared input row above both panels */
+    #compareInputRow {
+      display: none;
+      padding: 0 12px 0;
+      flex-direction: column;
+      gap: 10px;
+    }
+    body.compare-mode #compareInputRow { display: flex; }
+
+    /* ── Model Panel Card ─────────────────────────────────────── */
+    .model-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .panel-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--text-dim);
+    }
+
+    .panel-header .model-select-wrap { flex: 1; min-width: 0; }
+    .panel-header select {
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 11px;
+      padding: 7px 22px 7px 9px;
+    }
+
+    .panel-response {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px;
+      font-size: 12px;
+      line-height: 1.6;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 300px;
+      max-height: 340px;
+      transition: border-color var(--transition);
+      word-break: break-word;
+    }
+    .panel-response:hover { border-color: var(--border-h); }
+    .panel-response::-webkit-scrollbar       { width: 4px; }
+    .panel-response::-webkit-scrollbar-track { background: transparent; }
+    .panel-response::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
+
+    /* ── Compare Ask Button ───────────────────────────────────── */
+    #compareAskBtn {
+      width: 100%;
+      padding: 11px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all var(--transition);
+      box-shadow: 0 4px 14px rgba(59,130,246,.25);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    #compareAskBtn:hover  { background: var(--accent-h); box-shadow: 0 6px 18px rgba(59,130,246,.35); }
+    #compareAskBtn:active { transform: translateY(1px); }
+    #compareAskBtn:disabled { opacity: .65; cursor: not-allowed; transform: none; }
+
+    /* divider between panels */
+    .panel-divider {
+      width: 1px;
+      background: var(--border);
+      align-self: stretch;
+      border-radius: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <div class="header">
+    <div class="brand">
+      <h1>PageIntel</h1>
+      <span class="badge">AI</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button id="clearBtn" title="Delete all conversation for this website" style="display: flex; align-items: center; justify-content: center; padding: 7px; border: 1.5px solid var(--border-h); border-radius: 8px; background: var(--surface2); color: var(--text-sub); cursor: pointer; transition: all var(--transition);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"></path></svg>
+      </button>
+      <button id="compareToggle" title="Compare two models side by side">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="9" height="18" rx="2"/>
+          <rect x="13" y="3" width="9" height="18" rx="2"/>
+        </svg>
+        Compare
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SINGLE MODE
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="singlePanel" class="main">
+    <div class="input-row">
+      <div class="textarea-wrap">
+        <textarea id="userQuery" placeholder="Ask anything about this page… (Enter to send)"></textarea>
+      </div>
+      <div class="model-select-wrap">
+        <select id="modelSelect">
+          <option value="">Loading…</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="askBtn">Ask</button>
+
+    <div id="responseBox" class="response-area">
+      <div class="placeholder-msg">Your response will appear here…</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       COMPARE MODE – shared input
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="compareInputRow">
+    <textarea id="compareQuery" placeholder="Ask anything about this page… (Enter to send)" style="height:60px;width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:11px 13px;font-size:13px;color:var(--text);font-family:inherit;resize:none;transition:border-color var(--transition),box-shadow var(--transition);line-height:1.5;"></textarea>
+    <button id="compareAskBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="9" height="18" rx="2"/><rect x="13" y="3" width="9" height="18" rx="2"/></svg>
+      Compare Models
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       COMPARE MODE – side-by-side panels
+  ══════════════════════════════════════════════════════════════ -->
+  <div id="comparePanel">
+    <!-- Left Panel – Model A -->
+    <div class="model-panel" id="panelA">
+      <div class="panel-header">
+        <span class="panel-label">Model A</span>
+        <div class="model-select-wrap">
+          <select id="modelSelectA">
+            <option value="">Loading…</option>
+          </select>
+        </div>
+      </div>
+      <div id="responseA" class="panel-response">
+        <div class="placeholder-msg">Response A will appear here…</div>
+      </div>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <!-- Right Panel – Model B -->
+    <div class="model-panel" id="panelB">
+      <div class="panel-header">
+        <span class="panel-label">Model B</span>
+        <div class="model-select-wrap">
+          <select id="modelSelectB">
+            <option value="">Loading…</option>
+          </select>
+        </div>
+      </div>
+      <div id="responseB" class="panel-response">
+        <div class="placeholder-msg">Response B will appear here…</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
